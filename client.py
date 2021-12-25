@@ -7,6 +7,17 @@ url = 'http://192.168.1.5:5000/api' # server side
 basePath = str(os.getcwd())
 
 
+
+def getHE(userName):
+    HE = Pyfhel()    
+    HE.contextGen(p=65537, m=2**12) 
+    os.chdir(basePath+"/"+userName)
+    HE.restoreContext((userName+".con"))
+    HE.restorepublicKey((userName+".pk"))
+    HE.restoresecretKey((userName+"Private"+".pk"))
+    return HE
+
+
 def createHE(userID):
 
     path = os.path.join(str(userID))
@@ -77,12 +88,8 @@ def getNewTransfer( userName , password):
     
 
 def doTransfer(userName , password , money):
-    HE = Pyfhel()    
-    HE.contextGen(p=65537, m=2**12) 
+    HE = getHE(userName)
     os.chdir(basePath+"/"+userName)
-    HE.restoreContext((userName+".con"))
-    HE.restorepublicKey((userName+".pk"))
-    HE.restoresecretKey((userName+"Private"+".pk"))
     f = open("transfer.txt","w")
     f.write("0")
     f.close()    
@@ -105,12 +112,8 @@ def doTransfer(userName , password , money):
 
 # Para çekme yatırma işlemi için fonksiyon 
 def moneyOperasyon(userName , password , op):
-    HE = Pyfhel()    
-    HE.contextGen(p=65537, m=2**12) 
+    HE = getHE(userName)
     os.chdir(basePath+"/"+userName)
-    HE.restoreContext((userName+".con"))
-    HE.restorepublicKey((userName+".pk"))
-    HE.restoresecretKey((userName+"Private"+".pk"))
     moneyT = 0.0
     try:
         moneyT = float(input("Enter money : "))
@@ -131,7 +134,7 @@ def moneyOperasyon(userName , password , op):
         c_res = PyCtxt(pyfhel=HE, fileName="balance.ctxt", encoding=float)
         ourB = str(c_res.decrypt())
         if int(opB) > int(float(ourB)) :
-            print(" Çekmek istediğiniz para bakiyenizden fazla !!! ")
+            print(" The money you want to withdraw is more than your balance !!! ")
         else:
             requests.post(url+'/withdraw', auth=(userName, password))
     getNewBalance(HE,userName,password)
@@ -140,21 +143,15 @@ def moneyOperasyon(userName , password , op):
 def login():
     userName = input("Enter Username")
     password = input("Enter Password")
-    print("1- Banka para yatırma")
-    print("2- Banka para çekme")
-    print("3- Banka para transferi")
+    print("1- Bank Deposit Operation")
+    print("2- Bank Withdraw Operation")
+    print("3- Bank Money Transfer")
     operasyon = input(":")
     
-
-
     if os.path.exists(basePath+"/"+userName) :
 
-        HE = Pyfhel()    
-        HE.contextGen(p=65537, m=2**12) 
+        HE = getHE(userName)
         os.chdir(basePath+"/"+userName)
-        HE.restoreContext((userName+".con"))
-        HE.restorepublicKey((userName+".pk"))
-        HE.restoresecretKey((userName+"Private"+".pk"))
         getNewTransfer(userName,password)
         f = open("transfer.txt","r")
         line = f.read()
@@ -168,12 +165,8 @@ def login():
         elif operasyon =="2":
             moneyOperasyon(userName,password,0)
         elif operasyon =="3":
-            HE = Pyfhel()    
-            HE.contextGen(p=65537, m=2**12) 
+            HE = getHE(userName)
             os.chdir(basePath+"/"+userName)
-            HE.restoreContext((userName+".con"))
-            HE.restorepublicKey((userName+".pk"))
-            HE.restoresecretKey((userName+"Private"+".pk"))
             moneyT = 0.0
             try:
                 moneyT = float(input("Enter money : "))
@@ -184,13 +177,13 @@ def login():
             c_res = PyCtxt(pyfhel=HE, fileName="balance.ctxt", encoding=float)
             ourB = str(c_res.decrypt())
             if int(opB) > int(float(ourB)) :
-                print(" Transfer istediğiniz para bakiyenizden fazla !!! ")
+                print(" The money you want to transfer is more than your balance !!! ")
             else:
                 moneyT = HE.encryptFrac(moneyT)
                 moneyT.to_file("temp.ctxt")
                 tempPath = (basePath+"//"+userName+"//")
                 fPath = (tempPath+"temp.ctxt")
-                iban = input("Enter karsi taraf iban")
+                iban = input("Iban you want to send")
                 jsonObject ={
                     'iban' : iban,
                     'sendMoney' : opB
@@ -200,7 +193,7 @@ def login():
                 requests.post(url+'/fileUpload', files=files, auth=(userName, password))
                 requests.post(url+'/transfer',auth=(userName,password) ,json=jsonObject)
         else:
-            print("Hatalı seçim")
+            print("Wrong chooses")
     else:
         print("User file not found")
 
@@ -212,8 +205,6 @@ while(1):
     log_or_reg = input(": ")
     if log_or_reg =="1":
         register()
-
-
     elif log_or_reg=="2":
         login()
     elif log_or_reg=="3":
