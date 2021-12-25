@@ -149,7 +149,11 @@ def deposit():
     
     userPath =  basePath+g.user.username+"/"
     print(userPath)
-    os.chdir(userPath)
+    try:
+        os.chdir(userPath)
+    except:
+        userPath = basePath +"/"+g.user.username+"/"  
+        os.chdir(userPath)
     HE_Cl = Pyfhel()    
     HE_Cl.restoreContext(userPath+(g.user.username+".con"))
     HE_Cl.restorepublicKey(userPath+(g.user.username+".pk"))
@@ -171,7 +175,10 @@ def withdraw():
     
     userPath =  basePath+g.user.username+"/"
     print(userPath)
-    os.chdir(userPath)
+    try:
+    	os.chdir(userPath)
+    except:
+        userPath = basePath+"/"+g.user.username+"/"
     HE_Cl = Pyfhel()    
     HE_Cl.restoreContext(userPath+(g.user.username+".con"))
     HE_Cl.restorepublicKey(userPath+(g.user.username+".pk"))
@@ -195,8 +202,15 @@ def transfer():
     sendMoney = request.json.get('sendMoney')
     userSend =  User.query.filter_by(iban=iban).first()
     userPath =  basePath+g.user.username+"/"
-    os.chdir(userPath)
-    copyfile("transfer.txt", basePath+userSend.username+"/transfer.txt")
+    try:
+        os.chdir(userPath)
+    except:
+        userPath = basePath +"/"+g.user.username+"/"  
+        os.chdir(userPath)
+    try:
+        copyfile("transfer.txt", basePath+"/"+userSend.username+"/transfer.txt")
+    except:
+        copyfile("transfer.txt", basePath+userSend.username+"/transfer.txt")
     HE_Cl = Pyfhel()    
     HE_Cl.restoreContext(userPath+(g.user.username+".con"))
     HE_Cl.restorepublicKey(userPath+(g.user.username+".pk"))
@@ -209,7 +223,7 @@ def transfer():
 
 
     # Alıcı taraf
-    os.chdir(basePath+userSend.username+"/")
+    os.chdir(basePath+"/"+userSend.username+"/")
     f = open("transfer.txt","w")
     f.write(str(sendMoney))
     resp = jsonify({'message' : 'Transfer successfully '})
@@ -241,6 +255,6 @@ def get_resource():
 if __name__ == '__main__':
     if not os.path.exists('db.sqlite'):
         db.create_all()
-    app.run(host="192.168.1.5",port=5000)
+    app.run(host="127.0.0.1",port=5000)
     #app.run(debug=True)
 

@@ -3,7 +3,7 @@ from Pyfhel import Pyfhel, PyCtxt
 import os
 
 
-url = 'http://192.168.1.5:5000/api' # server side
+url = 'http://127.0.0.1:5000/api' # server side
 basePath = str(os.getcwd())
 
 
@@ -100,7 +100,7 @@ def doTransfer(userName , password , money):
         fPath = (tempPath+"temp.ctxt")
         files = {'file': open(fPath,'rb')}
     except:
-        tempPath = (basePath+"\\"+userName+"/")
+        tempPath = (basePath+"/"+userName+"/")
         fPath = (tempPath+"temp.ctxt") 
         files = {'file': open(fPath,'rb')}
     requests.post(url+'/fileUpload', files=files, auth=(userName, password))
