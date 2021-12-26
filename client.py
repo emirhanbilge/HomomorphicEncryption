@@ -6,8 +6,18 @@ import os
 url = 'http://127.0.0.1:5000/api' # server side
 basePath = str(os.getcwd())
 
+class User():
 
+    def __init__(self,username , password):
+        self.username = username 
+        self.password = password
 
+    def getUserName(self):
+        return self.username
+    def getPassword(self):
+        return self.password
+
+    
 def getHE(userName):
     HE = Pyfhel()    
     HE.contextGen(p=65537, m=2**12) 
@@ -39,9 +49,9 @@ def createHE(userID):
     f.close()
 
 def register():
-    userName = input("Enter Username ")
-    password = input("Enter Password ")
-    iban = input("Enter Iban Address")
+    userName = input("Enter ID Number : ")
+    password = input("Enter Password : ")
+    iban = input("Enter Iban Address : ")
     jsonObject ={
             'username' : userName ,
             'password' : password ,
@@ -77,7 +87,7 @@ def getNewBalance(HE , userName , password):
                     for chunk in r.iter_content(chunk_size=8192):  
                         f.write(chunk)
     c_res = PyCtxt(pyfhel=HE, fileName="balance.ctxt", encoding=float)
-    print(c_res.decrypt())
+    print("Balance : " + str(c_res.decrypt()))
 
 def getNewTransfer( userName , password):
     with requests.get(url+'/transferFile',  auth=(userName, password), stream=True) as r:
@@ -141,67 +151,74 @@ def moneyOperasyon(userName , password , op):
 
 
 def login():
-    userName = input("Enter Username")
-    password = input("Enter Password")
-    print("1- Bank Deposit Operation")
-    print("2- Bank Withdraw Operation")
-    print("3- Bank Money Transfer")
-    operasyon = input(":")
-    
+    userName = input("Enter ID Number : ")
+    password = input("Enter Password : ")
+
     if os.path.exists(basePath+"/"+userName) :
+        user = User(userName , password)
 
         HE = getHE(userName)
         os.chdir(basePath+"/"+userName)
-        getNewTransfer(userName,password)
-        f = open("transfer.txt","r")
-        line = f.read()
-        print(line)
-        if (line != "0"): 
-           doTransfer(userName ,password,float(line))
-        f.close()
-        getNewBalance(HE,userName,password)
-        if operasyon =="1":
-            moneyOperasyon(userName , password , 1)
-        elif operasyon =="2":
-            moneyOperasyon(userName,password,0)
-        elif operasyon =="3":
-            HE = getHE(userName)
-            os.chdir(basePath+"/"+userName)
-            moneyT = 0.0
-            try:
-                moneyT = float(input("Enter money : "))
-                opB = moneyT
-            except:
-                print ("Wrong !!!")
-                return 
-            c_res = PyCtxt(pyfhel=HE, fileName="balance.ctxt", encoding=float)
-            ourB = str(c_res.decrypt())
-            if int(opB) > int(float(ourB)) :
-                print(" The money you want to transfer is more than your balance !!! ")
-            else:
-                moneyT = HE.encryptFrac(moneyT)
-                moneyT.to_file("temp.ctxt")
-                tempPath = (basePath+"//"+userName+"//")
-                fPath = (tempPath+"temp.ctxt")
-                iban = input("Iban you want to send")
-                jsonObject ={
-                    'iban' : iban,
-                    'sendMoney' : opB
-                } 
+        while(1):
+            print("1- Bank Deposit Operation ")
+            print("2- Bank Withdraw Operation ")
+            print("3- Bank Money Transfer ")
+            print("4- Log out ")
+            operasyon = input(": ")
+            getNewTransfer(userName,password)
+            f = open("transfer.txt","r")
+            line = f.read()
+            if (line != "0"): 
+                print("Transfer Money : " + line)
+                doTransfer(userName ,password,float(line))
+            f.close()
+            getNewBalance(HE,userName,password)
+            if operasyon =="1":
+                moneyOperasyon(userName , password , 1)
+            elif operasyon =="2":
+                moneyOperasyon(userName,password,0)
+            elif operasyon =="3":
+                HE = getHE(userName)
+                os.chdir(basePath+"/"+userName)
+                moneyT = 0.0
+                try:
+                    moneyT = float(input("Enter money : "))
+                    opB = moneyT
+                except:
+                    print ("Wrong !!!")
+                    return 
+                c_res = PyCtxt(pyfhel=HE, fileName="balance.ctxt", encoding=float)
+                ourB = str(c_res.decrypt())
+                if int(opB) > int(float(ourB)) :
+                    print(" The money you want to transfer is more than your balance !!! ")
+                else:
+                    moneyT = HE.encryptFrac(moneyT)
+                    moneyT.to_file("temp.ctxt")
+                    tempPath = (basePath+"//"+userName+"//")
+                    fPath = (tempPath+"temp.ctxt")
+                    iban = input("Iban you want to send")
+                    jsonObject ={
+                        'iban' : iban,
+                        'sendMoney' : opB
+                    } 
                         
-                files = {'file': open(fPath,'rb')}
-                requests.post(url+'/fileUpload', files=files, auth=(userName, password))
-                requests.post(url+'/transfer',auth=(userName,password) ,json=jsonObject)
-        else:
-            print("Wrong chooses")
+                    files = {'file': open(fPath,'rb')}
+                    requests.post(url+'/fileUpload', files=files, auth=(userName, password))
+                    requests.post(url+'/transfer',auth=(userName,password) ,json=jsonObject)
+            elif operasyon=="4":
+                break
+            else:
+                print("Wrong chooses")
     else:
         print("User file not found")
 
 while(1):
     os.chdir(basePath)
+    print("****************** Welcome HE Encryption Bank ******************")
     print("1- Register")
     print("2- Login")
     print("3- Exit")
+    print("****************************************************************")
     log_or_reg = input(": ")
     if log_or_reg =="1":
         register()
